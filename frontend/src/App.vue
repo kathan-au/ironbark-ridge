@@ -1,4 +1,5 @@
 <script setup>
+import EmissionsChart from './components/EmissionsChart.vue'
 </script>
 
 <template>
@@ -7,7 +8,7 @@
       <h1>Ironbark Ridge — Sustainability Dashboard</h1>
     </header>
     <main>
-      <p>Dashboard content will go here.</p>
+      <EmissionsChart />
     </main>
   </div>
 </template>
