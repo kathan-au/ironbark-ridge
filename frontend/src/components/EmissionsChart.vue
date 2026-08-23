@@ -24,6 +24,7 @@ const chartData = computed(() => ({
 
 const chartOptions = {
   responsive: true,
+  maintainAspectRatio: false,
   plugins: {
     legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8, color: '#52605c', font: { family: 'DM Sans' } } },
     tooltip: { callbacks: { label: context => ` ${new Intl.NumberFormat('en-AU').format(context.raw)} kg CO2e` } },
@@ -47,7 +48,9 @@ const chartOptions = {
 <style scoped>
 .emissions-chart {
   height: 330px;
+  min-width: 0;
   position: relative;
+  width: 100%;
 }
 .chart-placeholder {
   align-items: center;
