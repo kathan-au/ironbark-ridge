@@ -3,47 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
 const pool = require('../db');
-const { logFlag } = require('../dataQuality');
+const { logFlag } = require('../lib/dataQuality');
 // --- Cleaning helpers ---
 
-function parseDate(rawDate) {
-  const value = rawDate.trim();
 
-  // Format 1: ISO date, e.g. "2025-12-19"
-  // These have dashes and the first chunk is 4 digits long (a year)
-  if (value.includes('-')) {
-    const parts = value.split('-');
-    if (parts.length === 3 && parts[0].length === 4) {
-      const [year, month, day] = parts;
-      return `${year}-${month}-${day}`;
-    }
-  }
-
-  // Format 2: DD/MM/YYYY, e.g. "21/05/2026"
-  if (value.includes('/')) {
-    const parts = value.split('/');
-    if (parts.length === 3) {
-      const [day, month, year] = parts;
-      return `${year}-${month}-${day}`;
-    }
-  }
-
-  // Format 3: Mon-YY, e.g. "Oct-25" or "Feb-26"
-  const months = {
-    Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
-    Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
-  };
-  if (value.includes('-')) {
-    const parts = value.split('-');
-    if (parts.length === 2 && months[parts[0]]) {
-      const monthNumber = months[parts[0]];
-      const year = '20' + parts[1];
-      return `${year}-${monthNumber}-01`; // no day given, default to the 1st
-    }
-  }
-
-  return null; // couldn't recognise the format at all
-}
+const { parseFuelDate, isMonthYearFormat } = require('../lib/dateParsers');
 
 function parseQuantityLitres(rawQty, rawUnit) {
   const qty = parseFloat(rawQty);
@@ -70,18 +34,6 @@ function parseCostAud(rawCost) {
   return isNaN(value) ? null : value;
 }
 
-function isMonthYearFormat(rawDate) {
-  const value = rawDate.trim();
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  if (!value.includes('-')) return false;
-
-  const parts = value.split('-');
-  if (parts.length !== 2) return false;
-
-  const [monthPart, yearPart] = parts;
-  return months.includes(monthPart) && yearPart.length === 2;
-}
 
 // --- Main ingestion ---
 
@@ -119,7 +71,7 @@ async function ingestFuelDeliveries() {
     const rawCost = row['Cost (AUD)'];
     const siteArea = row['Site Area'];
 
-    const cleanedDate = parseDate(rawDate);
+    const cleanedDate = parseFuelDate(rawDate);
     const quantityLitres = parseQuantityLitres(rawQuantity, rawUnit);
     const costAud = parseCostAud(rawCost);
     const siteId = await getOrCreateSite(siteArea);

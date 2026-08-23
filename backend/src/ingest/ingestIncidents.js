@@ -3,21 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
 const pool = require('../db');
-const { logFlag } = require('../dataQuality');
+const { logFlag } = require('../lib/dataQuality');
 
 // --- Cleaning helpers ---
 
-function parseDate(rawDate) {
-  // Expected format here: DD/MM/YYYY
-  const value = rawDate.trim();
-  if (!value.includes('/')) return null;
-
-  const parts = value.split('/');
-  if (parts.length !== 3) return null;
-
-  const [day, month, year] = parts;
-  return `${year}-${month}-${day}`;
-}
+const { parseIncidentDate } = require('../lib/dateParsers');
 
 function normaliseSeverity(rawSeverity) {
   const value = rawSeverity.trim().toLowerCase();
@@ -81,7 +71,7 @@ await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'incidents
     const rawSeverity = row['severity'];
     const description = row['description'].trim();
 
-    const cleanedDate = parseDate(rawDate);
+    const cleanedDate = parseIncidentDate(rawDate);
     const severityNormalised = normaliseSeverity(rawSeverity);
     const siteId = await getOrCreateSite(location);
 
