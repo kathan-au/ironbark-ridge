@@ -2,8 +2,8 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
-const pool = require('./db');
-const { logFlag } = require('./dataQuality');
+const pool = require('../db');
+const { logFlag } = require('../dataQuality');
 // --- Cleaning helpers ---
 
 function parseDate(rawDate) {
@@ -97,7 +97,8 @@ async function getOrCreateSite(siteName) {
 }
 
 async function ingestFuelDeliveries() {
-  const filePath = path.join(__dirname, '../../data/fuel_deliveries.csv');
+  await pool.query('TRUNCATE data_quality_flags, fuel_deliveries, sites RESTART IDENTITY CASCADE');
+  const filePath = path.join(__dirname, '../../../data/fuel_deliveries.csv');
   const csvContent = fs.readFileSync(filePath, 'utf-8');
 
   const records = parse(csvContent, {
@@ -154,16 +155,24 @@ async function ingestFuelDeliveries() {
       });
     }
 
-    if (quantityLitres === null) {
-      await logFlag(pool, {
-        sourceTable: 'fuel_deliveries',
-        sourceRecordRef: invoiceNo,
-        issueDescription: `Unrecognised unit "${rawUnit}" for quantity`,
-        actionTaken: 'flagged',
-        justification: 'Unit did not match known litre variants; normalised value left NULL to avoid silently misconverting.',
-      });
-      flagged++;
-    }
+if (quantityLitres === null) {
+  await logFlag(pool, {
+    sourceTable: 'fuel_deliveries',
+    sourceRecordRef: invoiceNo,
+    issueDescription: `Unrecognised unit "${rawUnit}" for quantity`,
+    actionTaken: 'flagged',
+    justification: 'Unit did not match known litre or kilolitre variants; normalised value left NULL to avoid silently misconverting.',
+  });
+  flagged++;
+} else if (rawUnit.trim().toLowerCase() === 'kl' || rawUnit.trim().toLowerCase().startsWith('kilolit')) {
+  await logFlag(pool, {
+    sourceTable: 'fuel_deliveries',
+    sourceRecordRef: invoiceNo,
+    issueDescription: `Quantity recorded in kilolitres ("${rawUnit}"), inconsistent with other rows in litres`,
+    actionTaken: 'fixed',
+    justification: 'Converted kL to L (×1000) for consistency with the majority unit; conversion factor is exact and unambiguous.',
+  });
+}
 
     if (costAud === null) {
       await logFlag(pool, {
