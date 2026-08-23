@@ -151,10 +151,23 @@ h3 { font-size: 21px; }
 .ai-model, .action-tag { background: #e5f2ed; color: var(--forest); font-size: 10px; font-weight: 700; letter-spacing: .1em; padding: 5px 8px; }
 .trend-chart { align-items: end; border-bottom: 1px solid var(--line); display: flex; gap: 5px; height: 182px; justify-content: space-around; padding: 0 2px; }
 .trend-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: end; min-width: 0; }
-.trend-value, .trend-label { color: var(--ink-muted); font-size: 10px; }
+.trend-value, .trend-label { color: var(--ink-muted); font-size: 10px; white-space: nowrap; }
 .trend-value { margin-bottom: 5px; }
 .trend-label { margin-top: 7px; }
 .trend-bar { background: var(--mint); min-height: 5px; width: min(24px, 65%); }
+.trend-column {
+  transition: transform 0.15s ease;
+}
+.trend-column:hover {
+  transform: scaleY(1.03);
+}
+.trend-column:hover .trend-bar {
+  background: #0d9488;
+}
+.trend-column:hover .trend-value {
+  font-weight: 700;
+  color: #0d9488;
+}
 .severity-list { display: grid; gap: 7px; margin-top: 20px; }
 .severity-row { color: var(--ink-muted); font-size: 12px; justify-content: space-between; }
 .severity-row strong { color: var(--ink); }
