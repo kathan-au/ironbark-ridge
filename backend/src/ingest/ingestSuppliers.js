@@ -3,33 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
 const pool = require('../db');
-const { logFlag } = require('../dataQuality');
-
-// --- Cleaning helpers ---
-
-function normaliseAbn(rawAbn) {
-  if (!rawAbn || rawAbn.trim() === '') return null;
-  const digitsOnly = rawAbn.split(' ').join('');
-  if (digitsOnly.length !== 11) return null; // not a valid ABN length
-  return digitsOnly;
-}
-
-function normaliseNameForMatching(name) {
-  // Strip common legal suffixes/punctuation so near-identical names can be compared
-  let value = name.trim().toLowerCase();
-  const suffixesToStrip = ['pty ltd', 'p/l', 'co', 'ltd', 'pty', 'inc'];
-  for (const suffix of suffixesToStrip) {
-    value = value.split(' ' + suffix).join('');
-  }
-  value = value.split('.').join('').split(',').join('').trim();
-  return value;
-}
-
-// --- Main ingestion ---
+const { logFlag } = require('../lib/dataQuality');
+const { normaliseAbn, groupDuplicateSuppliers } = require('../lib/supplierMatching');
 
 async function ingestSuppliers() {
-    await pool.query('TRUNCATE suppliers RESTART IDENTITY CASCADE');
-    await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'suppliers'`);
+  await pool.query('TRUNCATE suppliers RESTART IDENTITY CASCADE');
+  await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'suppliers'`);
 
   const filePath = path.join(__dirname, '../../../data/suppliers.csv');
   const csvContent = fs.readFileSync(filePath, 'utf-8');
@@ -39,41 +18,12 @@ async function ingestSuppliers() {
     skip_empty_lines: true,
   });
 
-  // --- Pass 1: group rows by normalised name ---
-  const nameGroups = {}; // nameKey -> array of rows
-  for (const row of records) {
-    const nameKey = normaliseNameForMatching(row['supplier_name']);
-    if (!nameGroups[nameKey]) nameGroups[nameKey] = [];
-    nameGroups[nameKey].push(row);
-  }
-
-  // --- Pass 2: merge any two name-groups that share a valid ABN ---
-  // (this catches typo cases like Blackwood, where names don't match but ABN does)
-  const abnToNameKey = {}; // abn -> the first nameKey we saw it under
-
-  for (const nameKey in nameGroups) {
-    for (const row of nameGroups[nameKey]) {
-      const abn = normaliseAbn(row['abn']);
-      if (!abn) continue;
-
-      if (abnToNameKey[abn] && abnToNameKey[abn] !== nameKey) {
-        // Found a different name-group sharing this ABN -> merge into it
-        const targetKey = abnToNameKey[abn];
-        nameGroups[targetKey].push(...nameGroups[nameKey]);
-        nameGroups[nameKey] = []; // empty out the merged-away group
-      } else {
-        abnToNameKey[abn] = nameKey;
-      }
-    }
-  }
+  const groups = groupDuplicateSuppliers(records);
 
   let inserted = 0;
   let flagged = 0;
 
-  for (const nameKey in nameGroups) {
-    const rows = nameGroups[nameKey];
-    if (rows.length === 0) continue; // skip groups that got merged away
-
+  for (const rows of groups) {
     const canonical = rows.reduce((best, r) =>
       parseFloat(r['fy_spend_aud']) > parseFloat(best['fy_spend_aud']) ? r : best
     );
