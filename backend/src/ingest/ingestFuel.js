@@ -97,7 +97,8 @@ async function getOrCreateSite(siteName) {
 }
 
 async function ingestFuelDeliveries() {
-  await pool.query('TRUNCATE data_quality_flags, fuel_deliveries, sites RESTART IDENTITY CASCADE');
+  await pool.query('TRUNCATE fuel_deliveries, sites RESTART IDENTITY CASCADE');
+  await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'fuel_deliveries'`);
   const filePath = path.join(__dirname, '../../../data/fuel_deliveries.csv');
   const csvContent = fs.readFileSync(filePath, 'utf-8');
 

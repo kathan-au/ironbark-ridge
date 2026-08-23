@@ -67,6 +67,7 @@ function findLowReadings(records) {
 
 async function ingestElectricityReadings() {
   await pool.query('TRUNCATE electricity_readings RESTART IDENTITY CASCADE');
+  await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'electricity_readings'`);
 
   const filePath = path.join(__dirname, '../../../data/electricity_meter_readings.csv');
   const csvContent = fs.readFileSync(filePath, 'utf-8');

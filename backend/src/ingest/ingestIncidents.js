@@ -46,6 +46,7 @@ async function getOrCreateSite(siteName) {
 
 async function ingestIncidents() {
   await pool.query('TRUNCATE incidents RESTART IDENTITY CASCADE');
+await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'incidents'`);
 
   const filePath = path.join(__dirname, '../../../data/incident_register.csv');
   const csvContent = fs.readFileSync(filePath, 'utf-8');

@@ -28,7 +28,8 @@ function normaliseNameForMatching(name) {
 // --- Main ingestion ---
 
 async function ingestSuppliers() {
-  await pool.query('TRUNCATE suppliers RESTART IDENTITY CASCADE');
+    await pool.query('TRUNCATE suppliers RESTART IDENTITY CASCADE');
+    await pool.query(`DELETE FROM data_quality_flags WHERE source_table = 'suppliers'`);
 
   const filePath = path.join(__dirname, '../../../data/suppliers.csv');
   const csvContent = fs.readFileSync(filePath, 'utf-8');
@@ -93,7 +94,7 @@ async function ingestSuppliers() {
         sourceRecordRef: canonical['supplier_name'],
         issueDescription: `Merged ${rows.length} rows appearing to be the same supplier: ${namesInvolved}`,
         actionTaken: 'fixed',
-        justification: `Matched via shared ABN and/or near-identical name after stripping legal suffixes. Combined FY spend across rows ($${totalSpend.toLocaleString()}) rather than treating as separate suppliers.`,
+        justification: `Matched via shared ABN and/or near-identical name after stripping legal suffixes. Combined FY spend across rows ($${totalSpend.toLocaleString('en-AU')}) rather than treating as separate suppliers.`,
       });
       flagged++;
     }
