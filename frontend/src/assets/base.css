@@ -1,4 +1,16 @@
-/* color palette from <https://github.com/vuejs/theme> */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root {
+  --paper: #f4f5ef;
+  --panel: #ffffff;
+  --ink: #20302b;
+  --ink-muted: #71807a;
+  --line: #dfe6df;
+  --forest: #1f5146;
+  --mint: #2a9d8f;
+  --coral: #e76f51;
+  --amber: #d69e2e;
+  --shadow: 0 12px 30px rgba(32, 48, 43, 0.06);
+}
 :root {
   --vt-c-white: #ffffff;
   --vt-c-white-soft: #f8f8f8;
@@ -60,27 +72,16 @@
 
 body {
   min-height: 100vh;
-  color: var(--color-text);
-  background: var(--color-background);
+  color: var(--ink);
+  background: var(--paper);
   transition:
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+button, select { font: inherit; }

@@ -1,6 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { computed } from 'vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -14,69 +13,47 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
-const loading = ref(true)
-const error = ref(null)
-const chartData = ref({ labels: [], datasets: [] })
+const props = defineProps({ data: { type: Array, default: () => [] }, loading: Boolean })
+const chartData = computed(() => ({
+  labels: props.data.map(row => row.month),
+  datasets: [
+    { label: 'Scope 1 / fuel', backgroundColor: '#e76f51', borderRadius: 3, data: props.data.map(row => row.scope1_kg_co2e) },
+    { label: 'Scope 2 / electricity', backgroundColor: '#2a9d8f', borderRadius: 3, data: props.data.map(row => row.scope2_kg_co2e) },
+  ],
+}))
 
 const chartOptions = {
   responsive: true,
   plugins: {
-    legend: { position: 'top' },
-    title: { display: true, text: 'Monthly emissions by scope (kg CO2e)' },
+    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8, color: '#52605c', font: { family: 'DM Sans' } } },
+    tooltip: { callbacks: { label: context => ` ${new Intl.NumberFormat('en-AU').format(context.raw)} kg CO2e` } },
   },
   scales: {
-    x: { stacked: true },
-    y: { stacked: true },
+    x: { stacked: true, grid: { display: false }, ticks: { color: '#7a8580', font: { family: 'DM Sans' } } },
+    y: { stacked: true, grid: { color: '#e7ebe6' }, ticks: { color: '#7a8580', font: { family: 'DM Sans' }, callback: value => new Intl.NumberFormat('en-AU', { notation: 'compact' }).format(value) } },
   },
 }
 
-async function fetchEmissions() {
-  try {
-    const response = await axios.get('http://localhost:3000/emissions/monthly')
-    const data = response.data.data
-
-    chartData.value = {
-      labels: data.map(row => row.month),
-      datasets: [
-        {
-          label: 'Scope 1 (fuel)',
-          backgroundColor: '#c2410c',
-          data: data.map(row => row.scope1_kg_co2e),
-        },
-        {
-          label: 'Scope 2 (electricity)',
-          backgroundColor: '#1d4ed8',
-          data: data.map(row => row.scope2_kg_co2e),
-        },
-      ],
-    }
-  } catch (err) {
-    error.value = 'Failed to load emissions data. Is the backend running?'
-    console.error(err)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(fetchEmissions)
 </script>
 
 <template>
   <div class="emissions-chart">
-    <div v-if="loading">Loading emissions data...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="chart-placeholder">Loading emissions data...</div>
+    <div v-else-if="!data.length" class="chart-placeholder">No emissions data available.</div>
     <Bar v-else :data="chartData" :options="chartOptions" />
   </div>
 </template>
 
 <style scoped>
 .emissions-chart {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: 330px;
+  position: relative;
 }
-.error {
-  color: #b91c1c;
+.chart-placeholder {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  height: 100%;
+  justify-content: center;
 }
 </style>
