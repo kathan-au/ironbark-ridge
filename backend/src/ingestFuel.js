@@ -51,9 +51,12 @@ function parseQuantityLitres(rawQty, rawUnit) {
 
   const unit = rawUnit.trim().toLowerCase();
   const litreSpellings = ['l', 'litres', 'liters'];
+  const kilolitreSpellings = ['kl', 'kilolitres', 'kiloliters'];
 
   if (litreSpellings.includes(unit)) return qty;
-  return null; // unrecognised unit
+  if (kilolitreSpellings.includes(unit)) return qty * 1000;
+
+  return null; // still unrecognised, don't guess
 }
 
 function parseCostAud(rawCost) {
