@@ -22,7 +22,9 @@ app.use('/emissions', emissionsRouter);
 app.use('/data-quality-report', dataQualityRouter);
 app.use('/incidents', incidentsRouter);
 app.use('/incidents/ai-flags', aiFlagsRouter);
-
+app.use(cors({
+  origin: true, 
+}));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
