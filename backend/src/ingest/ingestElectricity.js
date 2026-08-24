@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
 const pool = require('../db');
-const { logFlag } = require('../dataQuality');
+const { logFlag } = require('../lib/dataQuality');
 
 // --- Cleaning helpers ---
 
